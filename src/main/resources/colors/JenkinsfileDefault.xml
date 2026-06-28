@@ -1,0 +1,10 @@
+<scheme name="Default" version="142" parent_scheme="Default">
+    <attributes>
+        <!-- Steps (echo, sh, …) — teal, distinct from keyword blue and string green. -->
+        <option name="JENKINSFILE_STEP">
+            <value>
+                <option name="FOREGROUND" value="00627a"/>
+            </value>
+        </option>
+    </attributes>
+</scheme>

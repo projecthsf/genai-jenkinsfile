@@ -1,0 +1,10 @@
+<scheme name="Darcula" version="142" parent_scheme="Darcula">
+    <attributes>
+        <!-- Steps (echo, sh, …) — gold, distinct from keyword orange and string green. -->
+        <option name="JENKINSFILE_STEP">
+            <value>
+                <option name="FOREGROUND" value="ffc66d"/>
+            </value>
+        </option>
+    </attributes>
+</scheme>

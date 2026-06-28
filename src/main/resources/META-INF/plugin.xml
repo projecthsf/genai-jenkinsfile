@@ -1,0 +1,178 @@
+<idea-plugin>
+    <id>io.genai.jenkins</id>
+    <name>GenAI Jenkinsfile</name>
+    <version>1.0.0</version>
+    <vendor email="w2ajax@gmail.com" url="https://github.com/projecthsf/genai-jenkinsfile">GenAI</vendor>
+
+    <description><![CDATA[
+        <p><b>GenAI Jenkinsfile</b> brings full editor support for <b>Jenkinsfile</b>
+        (Jenkins declarative &amp; scripted pipelines) to any JetBrains IDE — IntelliJ IDEA,
+        GoLand, PyCharm, WebStorm, and the rest.</p>
+
+        <p><b>Editing</b></p>
+        <ul>
+          <li><b>Semantic highlighting</b> — directives, steps, annotations (<code>@Library</code>),
+              named arguments, environment variables and types are coloured by meaning, not a word list.</li>
+          <li><b>Formatting</b> — brace-depth reformat that lays out the declarative skeleton and the
+              Groovy inside <code>script</code> blocks, plus Enter auto-indent.</li>
+          <li>Brace matching and line/block comment toggling.</li>
+        </ul>
+
+        <p><b>Code assistance</b> (driven by a data catalog you can extend per project)</p>
+        <ul>
+          <li><b>Context-aware completion</b> — only what's valid inside the current block
+              (e.g. just post-conditions inside <code>post</code>).</li>
+          <li><b>Quick documentation</b> (F1 / hover) — signature, description, parameters and
+              where each construct is allowed.</li>
+          <li><b>Parameter info</b> for step calls; named-argument completion.</li>
+          <li><b>Go to Declaration</b> — in-file <code>def</code>s and <code>environment</code> vars,
+              <code>${...}</code> string interpolation, and a read-only "Jenkins Pipeline" library
+              under <b>External Libraries</b>. Plus structure view and breadcrumbs.</li>
+        </ul>
+
+        <p><b>Inspections</b></p>
+        <ul>
+          <li>Directive <b>placement</b> ("Allowed in …") and <b>cardinality</b> ("only once") checks,
+              with quick-fixes and intentions for common edits.</li>
+        </ul>
+
+        <p><b>Embedded languages</b> — Shell highlighting inside <code>sh</code>/<code>bat</code>/<code>pwsh</code>
+        strings and YAML inside a <code>kubernetes</code> agent's <code>yaml</code> (toggleable).</p>
+
+        <p><b>Your Jenkins' own steps</b> — generate a project stub from your instance's
+        <code>pipeline-syntax/gdsl</code> (right-click a <code>.gdsl</code> file, or
+        <b>Tools ▸ Generate Jenkins Pipeline Stub…</b>) and commit
+        <code>&lt;project&gt;/.jenkins/pipeline.jenkinsfile</code> so the whole team gets completion and
+        docs for shared-library and plugin steps.</p>
+
+        <p>Recognises <code>Jenkinsfile</code>, <code>Jenkinsfile.*</code> and <code>*.jenkinsfile</code>.
+        Colours are customisable under <b>Settings ▸ Editor ▸ Color Scheme ▸ Jenkinsfile</b>.</p>
+    ]]></description>
+
+    <!-- Platform-only: loads in every JetBrains IDE (IntelliJ, GoLand, PyCharm, …). -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType
+                name="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileFileType"
+                fieldName="INSTANCE"
+                language="Jenkinsfile"
+                extensions="jenkinsfile"
+                fileNames="Jenkinsfile"
+                patterns="Jenkinsfile.*"/>
+        <lang.parserDefinition
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileParserDefinition"/>
+        <lang.syntaxHighlighterFactory
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileSyntaxHighlighterFactory"/>
+        <annotator
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileAnnotator"/>
+        <additionalTextAttributes scheme="Default" file="colors/JenkinsfileDefault.xml"/>
+        <additionalTextAttributes scheme="Darcula" file="colors/JenkinsfileDarcula.xml"/>
+        <applicationConfigurable
+                parentId="language"
+                id="io.genai.jenkins.settings"
+                instance="io.genai.jenkins.JenkinsfileConfigurable"
+                key="settings.displayName"
+                bundle="messages.JenkinsfileBundle"/>
+        <colorSettingsPage
+                implementation="io.genai.jenkins.JenkinsfileColorSettingsPage"/>
+        <lang.braceMatcher
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileBraceMatcher"/>
+        <lang.commenter
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileCommenter"/>
+        <completion.contributor
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileCompletionContributor"/>
+        <lang.documentationProvider
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileDocumentationProvider"/>
+        <lang.psiStructureViewFactory
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileStructureViewFactory"/>
+        <breadcrumbsInfoProvider implementation="io.genai.jenkins.JenkinsfileBreadcrumbsProvider"/>
+        <lang.foldingBuilder
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileFoldingBuilder"/>
+        <localInspection
+                language="Jenkinsfile"
+                shortName="JenkinsfileStructure"
+                bundle="messages.JenkinsfileBundle"
+                key="inspection.displayName"
+                groupName="Jenkinsfile"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="io.genai.jenkins.JenkinsfileInspection"/>
+        <localInspection
+                language="Jenkinsfile"
+                shortName="JenkinsfileContext"
+                bundle="messages.JenkinsfileBundle"
+                key="inspection.context.displayName"
+                groupName="Jenkinsfile"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="io.genai.jenkins.JenkinsfileContextInspection"/>
+
+        <intentionAction>
+            <language>Jenkinsfile</language>
+            <className>io.genai.jenkins.AddStageIntention</className>
+            <category>Jenkinsfile</category>
+        </intentionAction>
+        <intentionAction>
+            <language>Jenkinsfile</language>
+            <className>io.genai.jenkins.AddPostBlockIntention</className>
+            <category>Jenkinsfile</category>
+        </intentionAction>
+        <intentionAction>
+            <language>Jenkinsfile</language>
+            <className>io.genai.jenkins.WrapInScriptIntention</className>
+            <category>Jenkinsfile</category>
+        </intentionAction>
+
+        <codeInsight.parameterInfo
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileParameterInfoHandler"/>
+        <typedHandler implementation="io.genai.jenkins.JenkinsfileTypedHandler"/>
+        <enterHandlerDelegate implementation="io.genai.jenkins.JenkinsfileEnterHandler"/>
+        <gotoDeclarationHandler implementation="io.genai.jenkins.JenkinsfileGotoDeclarationHandler"/>
+        <additionalLibraryRootsProvider implementation="io.genai.jenkins.JenkinsfilePipelineLibraryProvider"/>
+        <lang.formatter
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileFormattingModelBuilder"/>
+        <lang.elementManipulator
+                forClass="io.genai.jenkins.psi.JfStringLiteral"
+                implementationClass="io.genai.jenkins.psi.JfStringLiteralManipulator"/>
+        <multiHostInjector
+                implementation="io.genai.jenkins.JenkinsfileLanguageInjector"/>
+
+        <codeInsight.declarativeInlayProvider
+                language="Jenkinsfile"
+                implementationClass="io.genai.jenkins.JenkinsfileInlayProvider"
+                isEnabledByDefault="false"
+                group="OTHER_GROUP"
+                providerId="io.genai.jenkins.blockLabels"
+                nameKey="inlay.blockLabels.name"
+                bundle="messages.JenkinsfileBundle"/>
+    </extensions>
+
+    <actions>
+        <action id="io.genai.jenkins.GenerateProjectStub"
+                class="io.genai.jenkins.GenerateProjectStubAction"
+                text="Generate Jenkins Pipeline Stub…"
+                description="Generate .jenkins/pipeline.jenkinsfile from a saved Jenkins GDSL file">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        <action id="io.genai.jenkins.GenerateProjectStubFromFile"
+                class="io.genai.jenkins.GenerateProjectStubFromFileAction"
+                text="Generate Jenkins Pipeline Stub"
+                description="Generate .jenkins/pipeline.jenkinsfile from this Jenkins GDSL file">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
