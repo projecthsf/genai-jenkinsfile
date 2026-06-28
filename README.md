@@ -21,12 +21,8 @@ everywhere (IntelliJ IDEA, GoLand, PyCharm, WebStorm, PhpStorm, CLion, Rider, â€
 
 Recognises files named `Jenkinsfile` and `*.jenkinsfile`.
 
-## Architecture
 
-A real custom language built on **Kotlin + Grammar-Kit/JFlex**: the grammar
-(`src/main/grammar/*.bnf`, `*.flex`) generates the lexer, parser and PSI at build
-time, and all features run on that PSI. Cross-IDE (`com.intellij.modules.platform`
-only). See `ROADMAP.md` for details and remaining items.
+
 
 ## Build & run
 
