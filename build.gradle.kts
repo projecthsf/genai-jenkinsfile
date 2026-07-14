@@ -1,15 +1,19 @@
 import org.jetbrains.grammarkit.tasks.GenerateLexerTask
 import org.jetbrains.grammarkit.tasks.GenerateParserTask
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel
 
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "1.9.25"
-    id("org.jetbrains.intellij.platform") version "2.1.0"
+    // 2.18.0 (not 2.1.0): the pluginVerification DSL used by the publish gate is
+    // incompatible with Gradle 9.3 on 2.1.0. Matches the php-portable setup.
+    id("org.jetbrains.intellij.platform") version "2.18.0"
     id("org.jetbrains.grammarkit") version "2022.3.2.2"
 }
 
 group = "io.genai.jenkins"
-version = "1.0.0"
+version = "1.0.1"
 
 repositories {
     mavenCentral()
@@ -30,7 +34,7 @@ dependencies {
         } else {
             intellijIdeaCommunity("2024.1")
         }
-        instrumentationTools()
+        // instrumentationTools() removed in plugin 2.x — added automatically now.
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
     testImplementation("junit:junit:4.13.2")
@@ -49,27 +53,40 @@ kotlin {
 }
 
 // ---- Grammar-Kit / JFlex code generation -----------------------------------
-val generatedRoot = layout.buildDirectory.dir("generated/grammar")
+// The GENERATED parser/lexer live in src/main/gen and ARE committed, so the project builds
+// on CI (and any clean checkout) without the grammar sources. The grammar itself
+// (src/main/grammar/*.bnf|*.flex) is kept private and out of the repo (see .gitignore), and
+// is NOT wired into the normal build. When you change the grammar locally, regenerate with
+//   ./gradlew generateGrammar
+// and commit the updated src/main/gen. Generation is only offered when the grammar is present.
+val genRoot = layout.projectDirectory.dir("src/main/gen")
+sourceSets["main"].java.srcDir(genRoot)
 
-val generateJenkinsParser by tasks.registering(GenerateParserTask::class) {
-    sourceFile.set(file("src/main/grammar/Jenkinsfile.bnf"))
-    targetRootOutputDir.set(generatedRoot)
-    pathToParser.set("io/genai/jenkins/parser/JenkinsfileParser.java")
-    pathToPsiRoot.set("io/genai/jenkins/psi")
-    purgeOldFiles.set(true)
+val grammarPresent = file("src/main/grammar/Jenkinsfile.bnf").exists() &&
+        file("src/main/grammar/Jenkinsfile.flex").exists()
+
+if (grammarPresent) {
+    val generateJenkinsParser by tasks.registering(GenerateParserTask::class) {
+        sourceFile.set(file("src/main/grammar/Jenkinsfile.bnf"))
+        targetRootOutputDir.set(genRoot)
+        pathToParser.set("io/genai/jenkins/parser/JenkinsfileParser.java")
+        pathToPsiRoot.set("io/genai/jenkins/psi")
+        purgeOldFiles.set(true)
+    }
+
+    val generateJenkinsLexer by tasks.registering(GenerateLexerTask::class) {
+        sourceFile.set(file("src/main/grammar/Jenkinsfile.flex"))
+        targetOutputDir.set(genRoot.dir("io/genai/jenkins/lexer"))
+        purgeOldFiles.set(true)
+        dependsOn(generateJenkinsParser)   // .flex imports the generated JenkinsfileTypes
+    }
+
+    tasks.register("generateGrammar") {
+        group = "build"
+        description = "Regenerate the committed src/main/gen parser & lexer from the private grammar."
+        dependsOn(generateJenkinsParser, generateJenkinsLexer)
+    }
 }
-
-val generateJenkinsLexer by tasks.registering(GenerateLexerTask::class) {
-    sourceFile.set(file("src/main/grammar/Jenkinsfile.flex"))
-    targetOutputDir.set(generatedRoot.map { it.dir("io/genai/jenkins/lexer") })
-    purgeOldFiles.set(true)
-    dependsOn(generateJenkinsParser)   // .flex imports the generated JenkinsfileTypes
-}
-
-sourceSets["main"].java.srcDir(generatedRoot)
-
-tasks.named("compileKotlin") { dependsOn(generateJenkinsParser, generateJenkinsLexer) }
-tasks.named("compileJava") { dependsOn(generateJenkinsParser, generateJenkinsLexer) }
 
 // The settings indexer is flaky against a local() IDE; skip it.
 tasks.named("buildSearchableOptions") { enabled = false }
@@ -84,6 +101,30 @@ intellijPlatform {
         ideaVersion {
             sinceBuild = "233"
             untilBuild = provider { null }
+        }
+    }
+
+    // `./gradlew publishPlugin` reads the JetBrains Marketplace token from the PUBLISH_TOKEN
+    // env var (set as a GitHub Actions secret). No signing configured, so uploads are unsigned.
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
+
+    // `./gradlew verifyPlugin` runs the JetBrains Plugin Verifier (same tool Marketplace uses).
+    // This is a publish gate in CI (see .github/workflows/publish.yml).
+    pluginVerification {
+        failureLevel.set(listOf(
+            FailureLevel.COMPATIBILITY_PROBLEMS,
+            FailureLevel.INTERNAL_API_USAGES,
+            FailureLevel.MISSING_DEPENDENCIES,
+            FailureLevel.INVALID_PLUGIN,
+        ))
+        ides {
+            // Verify against the newest released unified IDEA. One download, enough to catch
+            // forward-compat problems.
+            latest {
+                types.set(listOf(IntelliJPlatformType.IntellijIdea))
+            }
         }
     }
 }

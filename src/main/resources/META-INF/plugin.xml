@@ -1,8 +1,8 @@
 <idea-plugin>
-    <id>io.genai.jenkins</id>
-    <name>GenAI Jenkinsfile</name>
-    <version>1.0.0</version>
-    <vendor email="w2ajax@gmail.com" url="https://github.com/projecthsf/genai-jenkinsfile">GenAI</vendor>
+    <id>io.genai.jenkinsfile</id>
+    <name>Jenkinsfile Support</name>
+    <version>1.0.1</version>
+    <vendor url="https://genai.io.vn/" email="contact@genai.io.vn">GenAI</vendor>
 
     <description><![CDATA[
         <p><b>GenAI Jenkinsfile</b> brings full editor support for <b>Jenkinsfile</b>

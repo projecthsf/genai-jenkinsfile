@@ -1,0 +1,27 @@
+# --- Build output ---
+/build/
+/out/
+
+# --- Gradle ---
+/.gradle/
+/.intellijPlatform/
+
+# --- IntelliJ / IDE ---
+/.idea/
+*.iml
+
+# --- macOS ---
+.DS_Store
+
+# --- Development scratch logs (not part of the project) ---
+*.log
+
+# --- Vendored dependency jars: fetched by Gradle, not source. Do not commit. ---
+/lib/
+
+# --- Local / possibly private Jenkins data — review before publishing publicly ---
+/jenkins.groovy
+/tools/my.gdsl
+
+# --- Grammar sources: kept private, not published ---
+/src/main/grammar/
